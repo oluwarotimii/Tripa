@@ -1,6 +1,9 @@
 {
   "name": "apizero",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=14 <15"
+  },
   "description": "",
   "main": "app.js",
   "scripts": {
@@ -21,4 +24,6 @@
     "mongodb": "^5.2.0",
     "mongoose": "^7.0.4"
   }
+  
 }
+
