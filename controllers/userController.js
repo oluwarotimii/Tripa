@@ -40,6 +40,67 @@ const BusCard = require('../models/BusCardSchema')
 // };
 
 // Function to generate a unique account reference
+// const generateAccountReference = () => {
+//   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+//   const length = 20;
+//   let accountReference = 'PSA';
+
+//   while (accountReference.length < length) {
+//     const randomIndex = Math.floor(Math.random() * characters.length);
+//     accountReference += characters[randomIndex];
+//   }
+
+//   return accountReference;
+// };
+
+// exports.register = async (req, res) => {
+//   try {
+//     // Extract user registration data from request body
+//     const { name, email, password, mobilenumber, country } = req.body;
+
+//     // Check if user with the same email already exists
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(409).json({ error: 'Email already in use' });
+//     }
+
+//     // Create a new user object
+//     const user = new User({ name, email, password });
+
+//     // Create a new wallet through the Flutterwave API
+//     const headers = {
+//       Authorization: process.env.FLW_SECRET_KEY
+//     };
+
+//     const accountReference = generateAccountReference();
+
+//     const walletData = {
+//       account_name: name,
+//       email,
+//       mobilenumber, // Set the appropriate mobile number for the user
+//       country, // Set the appropriate country for the user
+//       account_reference: accountReference
+//     };
+
+//     const response = await axios.post('https://api.flutterwave.com/v3/payout-subaccounts', walletData, { headers });
+//     console.log(response.data);
+
+//     // Save the wallet details to the user
+//     user.account_reference = accountReference; // Save the account reference in the user schema
+//     user.wallet = response.data; // Assuming the response data contains the wallet details
+//     await user.save();
+
+//     // Return success response
+//     res.status(201).json({ message: 'User registered successfully' });
+//   } catch (error) {
+//     // Handle any errors that may occur
+//     console.error(error);
+//     res.status(500).json({ error: 'Failed to register user' });
+//   }
+// };
+
+
+// Function to generate a unique account reference
 const generateAccountReference = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   const length = 20;
@@ -91,13 +152,14 @@ exports.register = async (req, res) => {
     await user.save();
 
     // Return success response
-    res.status(201).json({ message: 'User registered successfully' });
+    res.status(201).json({ message: 'User registered successfully', user });
   } catch (error) {
     // Handle any errors that may occur
     console.error(error);
     res.status(500).json({ error: 'Failed to register user' });
   }
 };
+
 
 
 //DETAILS
@@ -214,8 +276,9 @@ exports.login = async (req, res) => {
       token,
       user: {
         name: user.name,
-        email: user.email
-      }
+        email: user.email,
+        accountReference: user.account_reference
+      },
     });
   } catch (error) {
     console.error(error);
@@ -410,6 +473,58 @@ exports.rechargeBusCard = async (req, res, next) => {
 
 
 // CREDIT MERCHANT ENDPOINT FOR ACCEPTING PAYMENT
+// exports.creditUser = async (req, res) => {
+//   const receiverId = req.params.userId; // User ID of the receiver
+//   const cardNumber = req.body.cardNumber; // Card number of user 2
+//   const amount = req.body.amount;
+
+//   try {
+//     // Find the bus card associated with user 2's card number
+//     const busCard = await BusCard.findOne({ cardNumber });
+//     if (!busCard) {
+//       console.error('Bus card not found');
+//       return res.status(404).json({ message: 'Bus card not found' });
+//     }
+
+//     // Deduct the amount from user 2's bus card balance
+//     busCard.balance -= amount;
+
+//     // Find the user 1 (receiver) and credit the amount to their balance
+//     await User.findByIdAndUpdate(receiverId, { $inc: { balance: amount } });
+
+//     // Save the changes for user 2's bus card
+//     await busCard.save();
+
+//     // Create a transaction record for user 2
+//     const senderTransaction = new Transaction({
+//       user: busCard.owner, // User ID of user 2
+//       amount,
+//       type: 'debit',
+//       counterParty: receiverId, // Set the counterParty as the receiver's ID
+//       ref: 'Bus Card',
+//     }
+//     );
+//     await senderTransaction.save();
+
+//     // Create a transaction record for user 1
+//     const receiverTransaction = new Transaction({
+//       user: receiverId,
+//       amount,
+//       type: 'credit',
+//       ref: 'Wallet',
+//       counterParty: busCard.owner // Set the counterParty as the user 2's ID
+//     });
+//     await receiverTransaction.save();
+
+//     res.json({ message: 'User credited successfully' });
+//   } catch (error) {
+//     console.error('Error:', error);
+//     res.status(500).json({ message: 'Failed to credit the user' });
+//   }
+// };
+
+
+
 exports.creditUser = async (req, res) => {
   const receiverId = req.params.userId; // User ID of the receiver
   const cardNumber = req.body.cardNumber; // Card number of user 2
@@ -421,6 +536,12 @@ exports.creditUser = async (req, res) => {
     if (!busCard) {
       console.error('Bus card not found');
       return res.status(404).json({ message: 'Bus card not found' });
+    }
+
+    // Check if the bus card is active
+    if (!busCard.isActive) {
+      console.error('Bus card is not active');
+      return res.status(400).json({ message: 'Bus card is not active. Transaction declined.' });
     }
 
     // Deduct the amount from user 2's bus card balance
@@ -439,8 +560,7 @@ exports.creditUser = async (req, res) => {
       type: 'debit',
       counterParty: receiverId, // Set the counterParty as the receiver's ID
       ref: 'Bus Card',
-    }
-    );
+    });
     await senderTransaction.save();
 
     // Create a transaction record for user 1
@@ -449,7 +569,7 @@ exports.creditUser = async (req, res) => {
       amount,
       type: 'credit',
       ref: 'Wallet',
-      counterParty: busCard.owner // Set the counterParty as the user 2's ID
+      counterParty: busCard.owner, // Set the counterParty as the user 2's ID
     });
     await receiverTransaction.save();
 
@@ -463,6 +583,8 @@ exports.creditUser = async (req, res) => {
 
 
 
+
+
 const getBusCardsByUserId = async (userId) => {
   try {
     const busCards = await BusCard.find({ owner: userId });
@@ -472,3 +594,8 @@ const getBusCardsByUserId = async (userId) => {
     throw error;
   }
 };
+
+
+
+
+

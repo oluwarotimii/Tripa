@@ -25,14 +25,17 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  nuban: {
-    type: String
+  static_account: {
+    type: Number,
+  },
+  country: {
+    type: String,
   },
   bank_name: {
-    type: String
+    type: String,
   },
   bank_code: {
-    type: String
+    type: Number,
   },
   status: {
     type: String

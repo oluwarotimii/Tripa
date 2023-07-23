@@ -42,13 +42,11 @@ router.put('/users/:userId/credit', UserController.creditUser);
 router.get('/users/:userId/buscards', BusCardController.getBusCards);
 router.post('/users/:userId/buscards', BusCardController.createBusCard);
 router.put('/users/:userId/buscards/:cardId/recharge', BusCardController.rechargeBusCard);
-router.put('/users/userId/buscards/:cardId/deactivate', BusCardController.deactivateBusCardById);
 router.delete('/buscards/:cardId', BusCardController.deleteBusCardById);
 router.get('/buscards/:cardId/balance', BusCardController.getBusCardBalance);
-router.put('/buscards/:cardId/activate', BusCardController.activateBusCardById);
 router.post('/users/userId/buscards/:cardId/transfer', BusCardController.initiateTransfer);
 router.get('/buscards', BusCardController.getAllBusCards);
-
+router.put('/buscards/:cardId', BusCardController.changeCardStatus);
 // Wallet Routes
 router.post('/users/:userId/wallets', WalletController.createWallet);
 router.get('/wallets/:walletId/balance', WalletController.getWalletBalance);
@@ -63,6 +61,7 @@ router.get('/wallets/save-all', WalletController.saveAllWallets);
 
 // Additional Routes
 router.post('/wallets/:walletId/add-funds', WalletController.addFundsToWallet);
+router.post('/charge', WalletController.fundAccount);
 router.post('/fundVirtualAccount', WalletController.fundVirtualAccount);
 router.get('/payout-subaccounts/:accountReference/static-account', WalletController.fetchStaticVirtualAccount);
 

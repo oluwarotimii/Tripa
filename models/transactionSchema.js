@@ -21,8 +21,13 @@ const transactionSchema = new mongoose.Schema(
       enum: ['Wallet', 'Bus Card'],
       required: true,
     },
+    timestamps: {
+      type: Date,
+      default: Date.now(),
+      index: -1,
+    }
   },
-  { timestamps: true }
+
 );
 
 const Transaction = mongoose.model('Transaction', transactionSchema);

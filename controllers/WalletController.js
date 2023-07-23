@@ -49,54 +49,7 @@ const generateAccountReference = () => {
 };
 
 
-// exports.createWallet = async (req, res) => {
-//   try {
-//     const { userId, account_name, email, mobilenumber, country } = req.body;
-//     const headers = {
-//       Authorization: process.env.FLW_SECRET_KEY
-//     };
-    
-//     let accountReference;
-//     let existingWallet;
-//     do {
-//       // Generate a new account reference
-//       accountReference = generateAccountReference();
 
-//       // Check if account reference already exists in the database
-//       existingWallet = await Wallet.findOne({ account_reference: accountReference });
-//     } while (existingWallet);
-
-//     const data = {
-//       userId,
-//       account_name,
-//       email,
-//       mobilenumber,
-//       country: "NG",
-//       account_reference: accountReference
-//     };
-
-//     const response = await axios.post('https://api.flutterwave.com/v3/payout-subaccounts', data, { headers });
-//     console.log(response.data);
-
-//     // Create a new wallet in the database
-//     const newWallet = new Wallet({
-//       userId,
-//       account_name,
-//       email,
-//       mobilenumber,
-//       country,
-//       account_reference: accountReference
-//     });
-//     await newWallet.save();
-
-//     // Handle success response here
-//     res.status(200).json(response.data);
-//   } catch (error) {
-//     console.error(error);
-//     // Handle error response here
-//     res.status(500).json({ status: 'error', message: error.message, data: null });
-//   }
-// };
 
 exports.createWallet = async (req, res) => {
   try {
@@ -171,17 +124,7 @@ exports.getAllWallets = async (req, res) => {
 
 
 
-// exports.getAllWallets = async (req, res) => {
-//   try {
-//     // Retrieve all wallets from the database
-//     const wallets = await Wallet.find();
 
-//     // Send the wallets as a response in Postman
-//     res.json({ wallets });
-//   } catch (error) {
-//     console.error('Error retrieving wallets from the database:', error);
-//     res.status(500).json({ error: 'Failed to retrieve wallets' });
-//   }
 // };
 exports.saveAllWallets = async (req, res) => {
   try {
@@ -441,31 +384,6 @@ exports.getTransactionHistory = async (req, res) => {
   }
 };
 
-// // ACCEPT TRANSACTION
-// exports.acceptTransfer = async (req, res) => {
-//   try {
-//     //Extract wallet ID  to make a transfer
-//     // const merchantWalletId = req.params.walletId;
-//     const walletId = req.params.walletId;
-
-//     // Authenticate user using middleware
-//     await AuthMiddleware.authenticate(req, res);
-
-//     // Find the wallet in the database
-//     const wallet = await Wallet.findById(walletId);
-//     flw.initiateTransaction() {
-//       walletId,
-//       cardAuthPin,
-//       use
-      
-//     }
-
-    
-//   } catch (error) {
-    
-//   }
-// },
-
 
 // Get Transaction Details
 exports.getTransactionDetails = async (req, res) => {
@@ -622,5 +540,63 @@ exports.fetchStaticVirtualAccount = async (req, res) => {
     }
     console.log(error.stack);
     res.status(500).json({ message: 'An error occurred while fetching static virtual account details' });
+  }
+};
+
+
+
+
+exports.fundAccount = async (req, res) => {
+  try {
+    const { amount, paymentType, email, tx_ref, ...paymentDetails } = req.body;
+    let endpoint;
+    
+    // Set the endpoint URL based on the payment type
+    if (paymentType === 'card') {
+      endpoint = 'https://api.flutterwave.com/v3/charges?type=card';
+    } else if (paymentType === 'bank_transfer') {
+      endpoint = 'https://api.flutterwave.com/v3/charges?type=bank_transfer';
+    } else if (paymentType === 'mono') {
+      endpoint = 'https://api.flutterwave.com/v3/charges?type=mono';
+    } else {
+      throw new Error('Invalid payment type');
+    }
+    
+    // Construct request payload
+    const payload = {
+      amount,
+      email,
+      tx_ref,
+      ...paymentDetails
+    };
+    
+    // Set headers
+    const headers = {
+      Authorization: `Bearer ${process.env.FLW_SECRET_KEY}`,
+      'Content-Type': 'application/json'
+    };
+    
+    // Make request to Flutterwave API to initiate payment
+    const response = await axios.post(endpoint, payload, { headers });
+    console.log(response.data);
+    
+    // Check if the response status is success
+    if (response.data && response.data.status === 'success') {
+      const authorization = response.data.meta?.authorization;
+      if (authorization) {
+        // Extract the relevant data
+        const { auth_model, auth_url } = authorization;
+        // Return the response
+        return res.status(200).json({ auth_model, auth_url });
+      } else {
+        throw new Error('Unexpected API response: no authorization property found in response meta');
+      }
+    } else {
+      throw new Error('Unexpected API response: status is not success');
+    }
+  } catch (error) {
+    // Handle the error
+    console.error(error);
+    res.status(500).json({ message: 'An error occurred while processing the payment' });
   }
 };

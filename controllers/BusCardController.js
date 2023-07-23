@@ -284,61 +284,31 @@ exports.initiateTransfer = async (req, res) => {
 
 
 
-// Deactivate Bus Card by ID
-// Route: PUT /buscards/:id/deactivate
-// Activate Bus Card by ID
-exports.activateBusCardById = async (req, res) => {
-  const busCardId = req.params.id;
 
+// BusCardController.js to cahnge the card status of the card
+
+exports.changeCardStatus = async (req, res) => {
   try {
-    const busCard = await BusCard.findById(busCardId);
+    const { cardId } = req.params;
 
-    if (busCard) {
-      busCard.isActive = true;
-      await busCard.save();
-
-      return res.json({ message: 'Bus Card activated successfully', busCard });
-    }
-
-    return res.status(404).json({ error: 'Bus Card not found' });
-  } catch (error) {
-    console.error('Error in activating Bus Card by ID:', error);
-    return res.status(500).json({ error: 'Failed to activate Bus Card by ID' });
-  }
-};
-
-// Deactivate Bus Card by ID
-exports.deactivateBusCardById = async (req, res) => {
-  const userId = req.params.userId;
-  const busCardId = req.params.busCardId;
-
-  try {
-    // Check if the user exists
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Check if the bus card exists and belongs to the user
-    const busCard = await BusCard.findOne({ _id: busCardId, owner: userId });
+    // Check if the user and bus card exist
+    const busCard = await BusCard.findOne({ _id: cardId });
     if (!busCard) {
-      return res.status(404).json({ message: 'Bus card not found' });
+      return res.status(404).json({ error: 'Bus card not found' });
     }
 
-    const previousBalance = user.balance;
-
-    // Add to the user's balance
-    busCard.isActive = false;
+    // Toggle the isActive status
+    busCard.isActive = !busCard.isActive;
     await busCard.save();
 
- } catch (error) {
-  console.error(error);
-  res.status(500).json({ message: 'Failed to recharge the bus card' });
-}
+    // Return success response
+    res.json({ message: 'Bus card status updated successfully', busCard });
+  } catch (error) {
+    // Handle any errors that may occur
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update bus card status' });
+  }
 };
-
-
 
 
 
