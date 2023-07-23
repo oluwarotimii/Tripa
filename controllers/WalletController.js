@@ -273,42 +273,7 @@ exports.getWalletBalance = async (req, res) => {
   }
 };
 
-// Get Wallet Balance
-// let walletBalance = 5000;
 
-// exports.getWalletBalance = async (req, res) => {
-//   const accountReference = req.params.accountReference;
-
-//   try {
-//     const headers = {
-//       Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` // Replace with your actual secret key
-//     };
-
-//     const response = await axios.get(`https://api.flutterwave.com/v3/payout-subaccounts/${accountReference}/balances`, { headers });
-
-//     // Parse the response data
-//     const balanceData = response.data;
-
-//     // Extract the relevant data
-//     const { currency, available_balance, ledger_balance } = balanceData.data;
-
-//     // Assign balance to a variable
-//     const balance = {
-//       currency,
-//       available_balance,
-//       ledger_balance
-//     };
-
-    
-
-//     // Handle success response here
-//     res.json({ balance });
-//   } catch (error) {
-//     console.error(error);
-//     // Handle error response here
-//     res.status(500).json({ error: 'Failed to fetch wallet balance' });
-//   }
-// };
 
 
 // Create Transaction
@@ -598,5 +563,110 @@ exports.fundAccount = async (req, res) => {
     // Handle the error
     console.error(error);
     res.status(500).json({ message: 'An error occurred while processing the payment' });
+  }
+};
+
+
+
+
+
+// exports.fundUserAccount = async (req, res) => {
+
+//   try {
+//     const { amount, paymentType, email, tx_ref, ...paymentDetails } = req.body;
+//     let endpoint;
+    
+//     // Set the endpoint URL based on the payment type
+//     if (paymentType === 'card') {
+//       endpoint = 'https://api.flutterwave.com/v3/charges?type=card';
+//     } else if (paymentType === 'bank_transfer') {
+//       endpoint = 'https://api.flutterwave.com/v3/charges?type=bank_transfer';
+//     } else if (paymentType === 'mono') {
+//       endpoint = 'https://api.flutterwave.com/v3/charges?type=mono';
+//     } else {
+//       throw new Error('Invalid payment type');
+//     }
+    
+//     // Construct request payload
+//     const payload = {
+//       amount,
+//       email,
+//       tx_ref,
+//       ...paymentDetails
+//     };
+    
+//     // Set headers
+//     const headers = {
+//       Authorization: `Bearer ${process.env.FLW_SECRET_KEY}`,
+//       'Content-Type': 'application/json'
+//     };
+    
+//     // Make request to Flutterwave API to initiate payment
+//     const response = await axios.post(endpoint, payload, { headers });
+//     console.log(response.data);
+    
+//     // Check if the response status is success
+//     if (response.data && response.data.status === 'success') {
+//       const authorization = response.data.meta?.authorization;
+//       if (authorization) {
+//         // Extract the relevant data
+//         const { auth_model, auth_url } = authorization;
+//         // Return the response
+//         return res.status(200).json({ auth_model, auth_url });
+//       } else {
+//         throw new Error('Unexpected API response: no authorization property found in response meta');
+//       }
+//     } else {
+//       throw new Error('Unexpected API response: status is not success');
+//     }
+//   } catch (error) {
+//     // Handle the error
+//     console.error(error);
+//     res.status(500).json({ message: 'An error occurred while processing the payment' });
+//   }
+// };
+
+
+exports.fundUserAccount = async (req, res) => {
+  try {
+    // Extract user ID from request params
+    const userId = req.params.userId;
+
+    // Validate user authorization here (e.g., ensure the user has permission to perform transactions)
+
+    // Extract transaction details from request body
+    const { type, amount, description } = req.body;
+
+    // Create a new transaction with user ID
+    const transaction = new Transaction({ userId, type, amount, description });
+    await transaction.save();
+
+    // Update user balance based on transaction type
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (type === 'credit') {
+      type = 'credit', // Replace with either 'credit' or 'debit'
+      ref = 'Wallet', 
+      user.balance += amount;
+    } else if (type === 'debit') {
+      type = 'dedit', // Replace with either 'credit' or 'debit'
+      ref = 'Wallet'; 
+      if (user.balance < amount) {
+        return res.status(400).json({ error: 'Insufficient balance for transaction' });
+      }
+      user.balance += amount;
+      
+    }
+    await user.save();
+
+    // Return success response
+    res.json({ message: 'Transaction created successfully', transaction });
+  } catch (error) {
+    // Handle any errors that may occur
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create transaction' });
   }
 };

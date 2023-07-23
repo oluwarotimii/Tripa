@@ -17,7 +17,7 @@ router.get('/users/:userId/details', UserController.getUserDetails);
 router.put('/users/:userId/balance', UserController.updateUserBalance);
 router.get('/users/:userId/transactions', UserController.getUserTransactions);
 router.put('/users/:userId/credit', UserController.creditUser);
-// router.put('/users/:userId/bus-cards/:busCardId/recharge', UserController.rechargeBusCard);
+router.put('/users/:userId/buscards/:busCardId/withdraw', UserController.cardWithdraw);
 // Route to create a bus card and recharge from wallet
 // router.post('/bus-cards',  BusCardController.createBusCard);
 
@@ -62,6 +62,7 @@ router.get('/wallets/save-all', WalletController.saveAllWallets);
 // Additional Routes
 router.post('/wallets/:walletId/add-funds', WalletController.addFundsToWallet);
 router.post('/charge', WalletController.fundAccount);
+router.post('/users/:userId/chargeUser', WalletController.fundUserAccount);
 router.post('/fundVirtualAccount', WalletController.fundVirtualAccount);
 router.get('/payout-subaccounts/:accountReference/static-account', WalletController.fetchStaticVirtualAccount);
 

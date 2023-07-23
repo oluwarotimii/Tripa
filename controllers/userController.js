@@ -12,92 +12,7 @@ const BusCard = require('../models/BusCardSchema')
 
 
 
-// Register User
-// exports.register = async (req, res) => {
-//   try {
-//     // Extract user registration data from request body
-//     const { name, email, password } = req.body;
 
-//     // Check if user with the same email already exists
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) {
-//       return res.status(409).json({ error: 'Email already in use' });
-//     }
-
-//     // Create a new user object
-//     const user = new User({ name, email, password });
-
-//     // Save the user object to the database
-//     await user.save();
-
-//     // Return success response
-//     res.status(201).json({ message: 'User registered successfully' });
-//   } catch (error) {
-//     // Handle any errors that may occur
-//     console.error(error);
-//     res.status(500).json({ error: 'Failed to register user' });
-//   }
-// };
-
-// Function to generate a unique account reference
-// const generateAccountReference = () => {
-//   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-//   const length = 20;
-//   let accountReference = 'PSA';
-
-//   while (accountReference.length < length) {
-//     const randomIndex = Math.floor(Math.random() * characters.length);
-//     accountReference += characters[randomIndex];
-//   }
-
-//   return accountReference;
-// };
-
-// exports.register = async (req, res) => {
-//   try {
-//     // Extract user registration data from request body
-//     const { name, email, password, mobilenumber, country } = req.body;
-
-//     // Check if user with the same email already exists
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) {
-//       return res.status(409).json({ error: 'Email already in use' });
-//     }
-
-//     // Create a new user object
-//     const user = new User({ name, email, password });
-
-//     // Create a new wallet through the Flutterwave API
-//     const headers = {
-//       Authorization: process.env.FLW_SECRET_KEY
-//     };
-
-//     const accountReference = generateAccountReference();
-
-//     const walletData = {
-//       account_name: name,
-//       email,
-//       mobilenumber, // Set the appropriate mobile number for the user
-//       country, // Set the appropriate country for the user
-//       account_reference: accountReference
-//     };
-
-//     const response = await axios.post('https://api.flutterwave.com/v3/payout-subaccounts', walletData, { headers });
-//     console.log(response.data);
-
-//     // Save the wallet details to the user
-//     user.account_reference = accountReference; // Save the account reference in the user schema
-//     user.wallet = response.data; // Assuming the response data contains the wallet details
-//     await user.save();
-
-//     // Return success response
-//     res.status(201).json({ message: 'User registered successfully' });
-//   } catch (error) {
-//     // Handle any errors that may occur
-//     console.error(error);
-//     res.status(500).json({ error: 'Failed to register user' });
-//   }
-// };
 
 
 // Function to generate a unique account reference
@@ -233,8 +148,8 @@ exports.getUserTransactions = async (req, res, next) => {
   }
 
   try {
-    // Find all transactions for the user
-    const transactions = await Transaction.find({ user: userId });
+    // Find all transactions for the user and sort by createdAt in descending order (newest first)
+    const transactions = await Transaction.find({ user: userId }).sort({ createdAt: -1 });
 
     res.json(transactions);
   } catch (error) {
@@ -242,6 +157,7 @@ exports.getUserTransactions = async (req, res, next) => {
     res.status(500).json({ message: 'Failed to fetch user transactions' });
   }
 };
+
 
 
 
@@ -423,53 +339,57 @@ exports.rechargeBusCard = async (req, res, next) => {
 
 
 // Withdraw from Bus Card
-// exports.withdrawFromBusCard = async (req, res, next) => {
-//   const userId = req.params.userId;
-//   const busCardId = req.params.busCardId;
-//   const amount = req.body.amount;
+// Withdraw from Bus Card
+// Withdraw from Bus Card
+exports.cardWithdraw = async (req, res, next) => {
+  const userId = req.params.userId;
+  const busCardId = req.params.busCardId;
+  const amount = req.body.amount;
 
-//   try {
-//     // Check if the user exists
-//     const user = await User.findById(userId);
-//     if (!user) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
+  try {
+    // Check if the user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-//     // Check if the bus card exists and belongs to the user
-//     const busCard = await BusCard.findOne({ _id: busCardId, owner: userId });
-//     if (!busCard) {
-//       return res.status(404).json({ message: 'Bus card not found' });
-//     }
+    // Check if the bus card exists and belongs to the user
+    const busCard = await BusCard.findOne({ _id: busCardId, owner: userId });
+    if (!busCard) {
+      return res.status(404).json({ message: 'Bus card not found' });
+    }
 
-//     // Check if the bus card has sufficient balance for withdrawal
-//     if (busCard.balance < amount) {
-//       return res.status(400).json({ message: 'Insufficient balance in the bus card' });
-//     }
+    // Check if the bus card has sufficient balance for withdrawal
+    if (busCard.balance < amount) {
+      return res.status(400).json({ message: 'Insufficient balance in the bus card' });
+    }
 
-//     // Deduct the amount from the bus card balance
-//     busCard.balance -= amount;
+    // Deduct the amount from the bus card balance
+    busCard.balance -= amount;
 
-//     // Update the user's wallet balance by crediting the withdrawn amount
-//     user.walletBalance += amount;
+    // Update the user's wallet balance by crediting the withdrawn amount
+    user.balance += amount;
 
-//     // Save the changes
-//     await busCard.save();
-//     await user.save();
+    // Save the changes
+    await busCard.save();
+    await user.save();
 
-//     // Create a new transaction record
-//     const transaction = new Transaction({
-//       user: userId,
-//       amount: amount,
-//       type: 'credit',
-//     });
-//     await transaction.save();
+    // Create a new transaction record
+    const transaction = new Transaction({
+      user: userId,
+      amount: amount,
+      type: 'credit',
+      ref: 'Bus Card', // Set the ref field to 'Bus Card'
+    });
+    await transaction.save();
 
-//     res.json({ message: 'Amount withdrawn from the bus card and credited to the user\'s wallet successfully' });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Failed to withdraw from the bus card and credit the user\'s wallet' });
-//   }
-// };
+    res.json({ message: 'Amount withdrawn from the bus card and credited to the user\'s wallet successfully', transaction, newBalance: user.balance });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to withdraw from the bus card and credit the user\'s wallet' });
+  }
+};
+
 
 
 // CREDIT MERCHANT ENDPOINT FOR ACCEPTING PAYMENT
@@ -585,15 +505,7 @@ exports.creditUser = async (req, res) => {
 
 
 
-const getBusCardsByUserId = async (userId) => {
-  try {
-    const busCards = await BusCard.find({ owner: userId });
-    return busCards;
-  } catch (error) {
-    console.error('Error fetching bus cards:', error);
-    throw error;
-  }
-};
+
 
 
 
