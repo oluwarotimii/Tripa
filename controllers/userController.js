@@ -301,8 +301,7 @@ exports.rechargeBusCard = async (req, res, next) => {
       return res.status(404).json({ message: 'Bus card not found' });
     }
 
-    const previousBalance = user.balance;
-
+    
     // Add to the user's balance
     user.balance -= req.body.balance;
     await user.save();
