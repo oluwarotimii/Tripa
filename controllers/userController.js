@@ -443,8 +443,6 @@ exports.cardWithdraw = async (req, res, next) => {
 //   }
 // };
 
-
-
 exports.creditUser = async (req, res) => {
   const receiverId = req.params.userId; // User ID of the receiver
   const cardNumber = req.body.cardNumber; // Card number of user 2
@@ -462,6 +460,12 @@ exports.creditUser = async (req, res) => {
     if (!busCard.isActive) {
       console.error('Bus card is not active');
       return res.status(400).json({ message: 'Bus card is not active. Transaction declined.' });
+    }
+
+    // Check if the bus card balance is sufficient for the transaction
+    if (busCard.balance < amount) {
+      console.error('Insufficient balance in the bus card');
+      return res.status(400).json({ message: 'Insufficient balance in the bus card. Transaction declined.' });
     }
 
     // Deduct the amount from user 2's bus card balance
@@ -499,6 +503,7 @@ exports.creditUser = async (req, res) => {
     res.status(500).json({ message: 'Failed to credit the user' });
   }
 };
+
 
 
 
