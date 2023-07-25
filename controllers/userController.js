@@ -303,7 +303,7 @@ exports.rechargeBusCard = async (req, res, next) => {
 
     
     // Add to the user's balance
-    user.balance -= req.body.balance;
+    user.balance -= amount;
     await user.save();
     
     // Credit the amount to the bus card's balance
