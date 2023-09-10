@@ -14,3 +14,14 @@ Tripa is an app developed for a tech competition with the aim of revolutionizing
 - **Express.js**: Express.js is used to create a robust API structure.
 - **MongoDB**: MongoDB serves as our database to efficiently store and manage user information and transaction data.
 - **Render**: Tripa is hosted on Render, ensuring high availability and scalability.
+- 
+
+
+
+## Getting Started
+
+To set up the Tripa backend on your local machine, follow these steps:
+
+1. **Clone this repository** (main branch):
+   ```shell
+   git clone -b master https://github.com/your-username/tripa-backend.git
