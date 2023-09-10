@@ -57,8 +57,8 @@ Our Tripa backend codebase is meticulously designed to serve as the solid founda
   - Possess a flexible architecture capable of adapting to future enhancements and feature additions.
 
 
-![Hosted](render.png)
-![Hosted](triparender.png)
+![Hosted](triparender.PNG)
+![Hosted](render.PNG)
 
 
 
