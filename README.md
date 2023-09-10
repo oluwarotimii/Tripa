@@ -1,6 +1,6 @@
 # Tripa - Backend
 
-![Tripa Logo](tripa_logo.png)
+
 
 Welcome to the backend repository for Tripa, the innovative bus card app designed to streamline your commuting experience. This backend is a crucial part of our comprehensive solution, providing the necessary functionality to support the Tripa app.
 
