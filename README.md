@@ -25,3 +25,24 @@ To set up the Tripa backend on your local machine, follow these steps:
 1. **Clone this repository** (main branch):
    ```shell
    git clone -b master https://github.com/your-username/tripa-backend.git
+
+
+   ## Dependencies
+
+This project relies on the following dependencies:
+
+- **axios** (v1.3.6)
+- **bcrypt** (v5.1.0)
+- **body-parser** (v1.20.2)
+- **dotenv** (v16.0.3)
+- **express** (v4.18.2)
+- **flutterwave-node-v3** (v1.1.5)
+- **jsonwebtoken** (v9.0.0)
+- **mongodb** (v5.2.0)
+- **mongoose** (v7.0.4)
+
+Make sure to have these dependencies properly installed and configured to run the project successfully. You can use a package manager like npm to install them. Here's an example of how to install dependencies using npm:
+
+```bash
+npm install
+
