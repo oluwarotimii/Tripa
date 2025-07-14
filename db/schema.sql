@@ -42,4 +42,17 @@ CREATE TABLE "cards" (
   FOREIGN KEY ("profile_id") REFERENCES "profiles" ("id")
 );
 
--- Other tables like Transactions, Terminals, etc., will be linked to these core tables.
+-- 5. Transactions Table (A record of all financial events)
+CREATE TABLE "transactions" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "profile_id" uuid NOT NULL,
+  "transaction_type" varchar NOT NULL, -- e.g., 'TRANSFER_TO_BUS', 'FARE_PAYMENT'
+  "amount" decimal(12, 2) NOT NULL,
+  "status" varchar NOT NULL DEFAULT 'completed', -- 'completed', 'pending', 'failed'
+  "reference" varchar UNIQUE, -- Can be from payment provider or internal
+  "description" text,
+  "created_at" timestamptz DEFAULT now(),
+  FOREIGN KEY ("profile_id") REFERENCES "profiles" ("id")
+);
+
+-- Other tables like Terminals, etc., will be linked to these core tables.

@@ -1,3 +1,4 @@
+
 const sql = require('../db/connection');
 
 exports.getBusBalance = async (req, res) => {
@@ -61,8 +62,6 @@ exports.transferToBusBalance = async (req, res) => {
             // In a real implementation, you would call the Flutterwave API here to verify the balance.
 
             // 3. Upsert the bus balance
-            // This query will create a new bus_balances record if one doesn't exist,
-            // or update the existing one by adding the new amount.
             const [newBalance] = await tx`
                 INSERT INTO bus_balances (rider_profile_id, balance)
                 VALUES (${profileId}, ${transferAmount})
@@ -71,8 +70,11 @@ exports.transferToBusBalance = async (req, res) => {
                 RETURNING balance;
             `;
 
-            // 4. TODO: Create a transaction record for auditing purposes
-            // This would involve inserting a record into a 'transactions' table.
+            // 4. Create a transaction record for auditing purposes
+            await tx`
+                INSERT INTO transactions (profile_id, transaction_type, amount, description)
+                VALUES (${profileId}, 'TRANSFER_TO_BUS', ${transferAmount}, 'Funds transferred to bus balance');
+            `;
 
             return { status: 200, data: { newBalance: newBalance.balance, message: 'Transfer successful' } };
         });
@@ -84,6 +86,33 @@ exports.transferToBusBalance = async (req, res) => {
 
     } catch (error) {
         console.error('Transfer to bus balance failed:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+exports.getTransactionsForProfile = async (req, res) => {
+    const { userId } = req; // Injected by authenticate middleware
+    const { profileId } = req.params;
+
+    try {
+        // 1. Verify the user owns this profile
+        const [profile] = await sql`SELECT id FROM profiles WHERE id = ${profileId} AND user_id = ${userId}`;
+        if (!profile) {
+            return res.status(403).json({ error: 'Forbidden: You do not own this profile.' });
+        }
+
+        // 2. Fetch transactions for the profile, ordered by creation date
+        const transactions = await sql`
+            SELECT id, transaction_type, amount, status, reference, description, created_at 
+            FROM transactions 
+            WHERE profile_id = ${profileId}
+            ORDER BY created_at DESC;
+        `;
+
+        res.json(transactions);
+
+    } catch (error) {
+        console.error('Failed to get transactions for profile:', error.message);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
