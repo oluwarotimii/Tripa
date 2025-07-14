@@ -2,10 +2,11 @@ const express = require('express');
 const app = express();
 const routes = require('./routes/routes')
 require('./db/connection')
-const connectDB = require('./db/connection');
-require('dotenv').config();
-// const KEY = require('./auth/jwt')
-// require('./auth/crypto')
+require('dotenv').config({ path: '.env.local' });
+const express = require('express');
+const app = express();
+const routes = require('./routes/routes');
+const sql = require('./db/connection');
 
 //middleware
 app.use(express.json());
@@ -18,18 +19,21 @@ app.use(routes);
 
 const port = process.env.PORT || 4000;
 
-const start = async() => {
+const start = async () => {
     try {
-        await connectDB();
-        // await jwtSecret();
-        // await KEY();
+        // Test the database connection
+        const result = await sql`SELECT version()`;
+        console.log('Database connected successfully:', result[0].version);
+
         app.listen(port, () =>
-        console.log(`Server is listening on Port ${port} .... May God help us.`))
+            console.log(`Server is listening on Port ${port} .... May God help us.`)
+        );
     } catch (error) {
-        console.log(error);
-        
+        console.error('Failed to connect to the database.');
+        console.error(error);
+        process.exit(1); // Exit if the database connection fails
     }
-}
+};
 
 start();
 

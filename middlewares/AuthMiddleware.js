@@ -1,18 +1,18 @@
-// authMiddleware.js
 
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 
 // Middleware function to authenticate user
 const authenticate = (req, res, next) => {
   try {
-    // Get token from request headers, query params, or cookies
-    const token = req.headers.authorization || req.query.token || req.cookies.token;
+    // Get token from request headers (Authorization: Bearer TOKEN)
+    const authHeader = req.headers.authorization;
 
-    // If token not found, return an error response
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized: Token not found' });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized: Token not found or malformed' });
     }
+
+    const token = authHeader.split(' ')[1];
 
     // Verify and decode token
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
@@ -21,8 +21,8 @@ const authenticate = (req, res, next) => {
         return res.status(401).json({ error: 'Unauthorized: Invalid token' });
       }
 
-      // Attach the decoded user information to the request object
-      req.user = decoded.user;
+      // Attach the decoded user ID to the request object
+      req.userId = decoded.userId;
 
       // Call the next middleware or route handler
       next();
